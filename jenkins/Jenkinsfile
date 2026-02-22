@@ -10,7 +10,7 @@ pipeline {
                 }
             }
             steps {
-                dir('bugtracker-backend'){
+                dir('bugtracker-backend'){ //cache files directories & running tests
                     sh 'export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache && go test -v ./...'
                 }
             }
