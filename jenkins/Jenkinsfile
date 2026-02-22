@@ -31,6 +31,12 @@ pipeline {
                     '''
                 }
             }
+            //adding "post" step that shall be executed after alt he steps ()
+            post {
+                always {//always added to be executed each time, regardless if the tests fail or success
+                    junit 'bugtracker-frontend/test-results.xml' //adding the report file dir
+                }
+            }
         }
     }
 }
