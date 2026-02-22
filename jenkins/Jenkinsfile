@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     stages {
-        stage('Unit Tests - Backend') { //adding an agent/docker container with go installed in order to be able to run via jenkins
+        stage('Unit Tests - Backend') {
             agent {
                 docker{
                     image 'snakee/golang-junit:1.21'
@@ -13,7 +13,6 @@ pipeline {
                 dir('bugtracker-backend'){
                     sh 'go test -v ./...'
                 }
-
             }
         }
     }
