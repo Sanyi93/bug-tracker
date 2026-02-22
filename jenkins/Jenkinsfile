@@ -61,8 +61,8 @@ pipeline {
                 always {//always added to be executed each time, regardless if the tests fail or success
                     junit 'bugtracker-frontend/test-results.xml' //adding the report file dir
                     publishHTML target: [
-                        reportDir: 'bugtracker-frontend/reports/coverage'
-                        reportFiles: 'index.html'
+                        reportDir: 'bugtracker-frontend/reports/coverage',
+                        reportFiles: 'index.html',
                         reportName: 'Frontend Coverage Report'
                     ]
                 }
