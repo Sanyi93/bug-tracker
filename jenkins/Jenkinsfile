@@ -11,15 +11,24 @@ pipeline {
             }
             steps {
                 dir('bugtracker-backend'){ //cache files directories & running tests & creating a junit report
-                    sh 'export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache && go test -v ./... 2>&1 | go-junit-report > test-results.xml'
+
+                    environment{
+                        GOCACHE = "${WORKSPACE}/.cache/go-build"
+                        GOMODCACHE = "${WORKSPACE}/.cache/go-mod"
+                    }
+                    
+                    //export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache && 
+                    sh 'go test -v ./... 2>&1 | go-junit-report > test-results.xml'
                     //creating cache in the HOME path
                     args '-u 1000:1000 -e HOME=${WORKSPACE}'                    
                     //Generating coverage report
                     sh 'go test -coverprofile=coverage.out -covermode=atomic ./...'
                     sh 'go tool cover -html=coverage.out -o coverage.html'
                     //Creating a directory called reports & moving there the file coverage.html created above
-                    sh 'mkdir -p reports'
-                    sh 'mv coverage.html reports/'
+                    sh '''
+                        mkdir -p reports
+                        mv coverage.html reports/
+                    '''
                 }
             }
             //adding "post" step that shall be executed after all the steps ()
