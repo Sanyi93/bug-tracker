@@ -10,8 +10,14 @@ pipeline {
                 }
             }
             steps {
-                dir('bugtracker-backend'){ //cache files directories & running tests
-                    sh 'export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache && go test -v ./...'
+                dir('bugtracker-backend'){ //cache files directories & running tests & creating a junit report
+                    sh 'export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache && go test -v ./... 2>&1 | go-junit-report > test-results.xml'
+                }
+            }
+            //adding "post" step that shall be executed after all the steps ()
+            post {
+                always {//always added to be executed each time, regardless if the tests fail or success
+                    junit 'bugtracker-backend/test-results.xml'//adding the report file dir
                 }
             }
         }
@@ -31,7 +37,7 @@ pipeline {
                     '''
                 }
             }
-            //adding "post" step that shall be executed after alt he steps ()
+            //adding "post" step that shall be executed after all the steps ()
             post {
                 always {//always added to be executed each time, regardless if the tests fail or success
                     junit 'bugtracker-frontend/test-results.xml' //adding the report file dir

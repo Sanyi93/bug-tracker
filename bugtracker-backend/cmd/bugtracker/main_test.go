@@ -27,7 +27,7 @@ func TestServerInitialization(t *testing.T) {
 	os.Setenv("DB_PATH", testutil.GetTestDBPath())
 	defer testutil.CleanupTestDB()
 
-	testPort := ":8081" // Use a different port for testing
+	testPort := ":8081" // Use a different port for testing; initially there was the port "8081", however this seems to be used
 	srv := createTestServer()
 	srv.Addr = testPort // Override the server port
 
