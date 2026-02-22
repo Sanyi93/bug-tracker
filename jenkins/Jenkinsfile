@@ -2,84 +2,71 @@ pipeline {
     agent any
 
     stages {
-        
-        stage('Execute All Unit Tests'){
-            //for parallel execution of the steps (tests)
-            parallel {
-                        stage('Unit Tests - Backend') {
-                                    agent {
-                                        docker {
-                                            image 'snakee/golang-junit:1.21'
-                                            reuseNode true
-                                        }
-                                    }
+        stage('Unit Tests - Backend') {
+            agent {
+                docker {
+                    image 'snakee/golang-junit:1.21'
+                    reuseNode true
+                }
+            }
+            steps {
+                dir('bugtracker-backend'){ //cache files directories & running tests & creating a junit report
+                    // 
+                    sh 'export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache && go test -v ./... 2>&1 | go-junit-report > test-results.xml'
+                    //Generating coverage report
+                    sh 'export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache && go test -coverprofile=coverage.out -covermode=atomic ./...'
+                    sh 'export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache && go tool cover -html=coverage.out -o coverage.html'
+                    //Creating a directory called reports & moving there the file coverage.html created above
+                    sh '''
+                        export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache &&
+                        mkdir -p reports
+                        mv coverage.html reports/
+                    '''
+                }
+            }
+            //adding "post" step that shall be executed after all the steps ()
+            post {
+                always {//always added to be executed each time, regardless if the tests fail or success
+                    junit 'bugtracker-backend/test-results.xml'//adding the report file dir
 
-                                    steps {
-                                        dir('bugtracker-backend'){ //cache files directories & running tests & creating a junit report
-                                            // 
-                                            sh 'export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache && go test -v ./... 2>&1 | go-junit-report > test-results.xml'
-                                            //Generating coverage report
-                                            sh 'export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache && go test -coverprofile=coverage.out -covermode=atomic ./...'
-                                            sh 'export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache && go tool cover -html=coverage.out -o coverage.html'
-                                            //Creating a directory called reports & moving there the file coverage.html created above
-                                            sh '''
-                                                export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache &&
-                                                mkdir -p reports
-                                                mv coverage.html reports/
-                                            '''
-                                        }
-                                    }
-                                    //adding "post" step that shall be executed after all the steps ()
-                                    post {
-                                        always {//always added to be executed each time, regardless if the tests fail or success
-                                            junit 'bugtracker-backend/test-results.xml'//adding the report file dir
-
-                                            //Publishing the coverage report
-                                            publishHTML target: [
-                                                reportDir: 'bugtracker-backend/reports',
-                                                reportFiles: 'coverage.html',
-                                                reportName: 'Backend Coverage Report'
-                                            ]
-                                        }
-                                    }
-                        }
-
-                        stage('Unit Tests - Frontend'){
-                            agent {
-                                docker {
-                                    image 'node:20-alpine'
-                                    reuseNode true
-                                }
-                            }
-                            steps {
-                                dir('bugtracker-frontend'){
-                                    sh '''
-                                    npm ci 
-                                    npm test
-                                    mkdir -p reports
-                                    mv coverage reports/
-                                    '''
-                                }
-                            }
-                            //adding "post" step that shall be executed after all the steps ()
-                            post {
-                                always {//always added to be executed each time, regardless if the tests fail or success
-                                    junit 'bugtracker-frontend/test-results.xml' //adding the report file dir
-                                    publishHTML target: [
-                                        reportDir: 'bugtracker-frontend/reports/coverage',
-                                        reportFiles: 'index.html',
-                                        reportName: 'Frontend Coverage Report'
-                                    ]
-                                }
-                            }
-                        }                                            
-            }    
+                    //Publishing the coverage report
+                    publishHTML target: [
+                        reportDir: 'bugtracker-backend/reports',
+                        reportFiles: 'coverage.html',
+                        reportName: 'Backend Coverage Report'
+                    ]
+                }
+            }
         }
-        //clean up after the testrun
-    post {
-        always{
-            cleanWs()
+
+        stage('Unit Tests - Frontend'){
+            agent {
+                docker {
+                    image 'node:20-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                dir('bugtracker-frontend'){
+                    sh '''
+                    npm ci 
+                    npm test
+                    mkdir -p reports
+                    mv coverage reports/
+                    '''
+                }
+            }
+            //adding "post" step that shall be executed after all the steps ()
+            post {
+                always {//always added to be executed each time, regardless if the tests fail or success
+                    junit 'bugtracker-frontend/test-results.xml' //adding the report file dir
+                    publishHTML target: [
+                        reportDir: 'bugtracker-frontend/reports/coverage',
+                        reportFiles: 'index.html',
+                        reportName: 'Frontend Coverage Report'
+                    ]
+                }
+            }
         }
-    }
     }
 }
