@@ -12,12 +12,25 @@ pipeline {
             steps {
                 dir('bugtracker-backend'){ //cache files directories & running tests & creating a junit report
                     sh 'export GOCACHE=/tmp/go-cache && export GOMODCACHE=/tmp/go-mod-cache && go test -v ./... 2>&1 | go-junit-report > test-results.xml'
+                    //Generating coverage report
+                    sh 'go test -coverprofile=coverage.out -covermode=atomic ./...'
+                    sh 'go tool cover -html=coverage.out -o coverage.html'
+                    //Creating a directory called reports & moving there the file coverage.html created above
+                    sh 'mkdir -p reports'
+                    sh 'mv coverage.html reports/'
                 }
             }
             //adding "post" step that shall be executed after all the steps ()
             post {
                 always {//always added to be executed each time, regardless if the tests fail or success
                     junit 'bugtracker-backend/test-results.xml'//adding the report file dir
+
+                    //Publishing the coverage report
+                    publishHTML target: [
+                        reportDir: 'bugtracker-backend/reports',
+                        reportFiles: 'coverage.html',
+                        reportName: 'Backend Coverage Report'
+                    ]
                 }
             }
         }
