@@ -19,12 +19,12 @@ pipeline {
         stage('Unit Tests - Frontend'){
             agent {
                 docker {
-                    imae 'node:20-alpine'
+                    image 'node:20-alpine'
                     reuseNode true
                 }
             }
             steps {
-                dir('bugtracker-frontedn'{
+                dir('bugtracker-frontend'{
                     sh '''
                     npm ci 
                     npm test
