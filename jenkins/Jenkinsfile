@@ -2,7 +2,9 @@ pipeline {
     agent any
 
     stages {
-        stage('Unit Tests - Backend') {
+        stage('Execute Unit Tests'){
+            parallel {
+                stage('Unit Tests - Backend') {
             agent {
                 docker {
                     image 'snakee/golang-junit:1.21'
@@ -39,34 +41,42 @@ pipeline {
             }
         }
 
-        stage('Unit Tests - Frontend'){
-            agent {
-                docker {
-                    image 'node:20-alpine'
-                    reuseNode true
+                stage('Unit Tests - Frontend'){
+                            agent {
+                                docker {
+                                    image 'node:20-alpine'
+                                    reuseNode true
+                                }
+                            }
+                            steps {
+                                dir('bugtracker-frontend'){
+                                    sh '''
+                                    npm ci 
+                                    npm test
+                                    mkdir -p reports
+                                    mv coverage reports/
+                                    '''
+                                }
+                            }
+                            //adding "post" step that shall be executed after all the steps ()
+                            post {
+                                always {//always added to be executed each time, regardless if the tests fail or success
+                                    junit 'bugtracker-frontend/test-results.xml' //adding the report file dir
+                                    publishHTML target: [
+                                        reportDir: 'bugtracker-frontend/reports/coverage',
+                                        reportFiles: 'index.html',
+                                        reportName: 'Frontend Coverage Report'
+                                    ]
+                                }
+                            }
                 }
             }
-            steps {
-                dir('bugtracker-frontend'){
-                    sh '''
-                    npm ci 
-                    npm test
-                    mkdir -p reports
-                    mv coverage reports/
-                    '''
-                }
-            }
-            //adding "post" step that shall be executed after all the steps ()
-            post {
-                always {//always added to be executed each time, regardless if the tests fail or success
-                    junit 'bugtracker-frontend/test-results.xml' //adding the report file dir
-                    publishHTML target: [
-                        reportDir: 'bugtracker-frontend/reports/coverage',
-                        reportFiles: 'index.html',
-                        reportName: 'Frontend Coverage Report'
-                    ]
-                }
-            }
+        }  
+    }
+    //Adding cleanUp step after all stages run
+    post {
+        always {
+            cleanWs()
         }
     }
 }
