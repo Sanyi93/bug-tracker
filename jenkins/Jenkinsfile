@@ -82,7 +82,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'docker compose up --build --abort-on-container-exit --exit-code-from test'
+                sh 'docker compose up --build --abort-on-container-exit'
             }
         }
         //Running the PW API Tests
