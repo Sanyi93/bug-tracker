@@ -104,7 +104,7 @@ pipeline {
             }
             post {
                 always {
-                    junit 'tests-api/test-results/result.xml' //specify the file
+                    junit 'tests-api/test-results/results.xml' //specify the file
                     publishHTML target: [
                         reportDir: 'tests-api/playwright-report/',
                         reportFiles: 'index.html',
