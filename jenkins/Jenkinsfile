@@ -82,7 +82,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'docker compose up --build -d'
+                sh 'docker compose up --build --abort-on-container-exit --exit-code-from test'
             }
         }
         //Running the PW API Tests
@@ -99,7 +99,7 @@ pipeline {
                     sh 'npx wait-port http://localhost:8080/api/health -t 30000' //waiting till the app is ready
 
                     sh 'npm ci'
-                    sh ' npx playwright test'
+                    sh 'npx playwright test'
                 }
             }
             post {
