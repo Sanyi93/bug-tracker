@@ -90,7 +90,7 @@ pipeline {
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.50.0-jammy'
-                    reuseNode true;
+                    reuseNode true
                     args '-u 0 --network=host' //setting the network for communication with the image created in the step above
                 }
             }
@@ -110,6 +110,22 @@ pipeline {
                         reportFiles: 'index.html',
                         reportName: 'Playwright API Test Report'
                     ]
+                }
+            }
+        }
+        //Executing PW E2E Tests on JENKINS
+        stage('E2E Tests'){
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.50.0-jammy'
+                    reuseNode true
+                    args '-u 0 --network=host'
+                }
+            }
+            steps {
+                dir('tests-e2e') {
+                    sh 'npm ci'
+                    sh 'npx playwirght test'
                 }
             }
         }
