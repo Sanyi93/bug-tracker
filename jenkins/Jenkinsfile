@@ -100,9 +100,17 @@ pipeline {
 
                     sh 'npm ci'
                     sh ' npx playwright test'
-
                 }
-
+            }
+            post {
+                always {
+                    junit 'tests-api/test-results/result.xml' //specify the file
+                    publishHTML target: [
+                        reportDir: 'tests-api/playwright-report/',
+                        reportFiles: 'index.html',
+                        reportName: 'Playwright API Test Report'
+                    ]
+                }
             }
         }
 
