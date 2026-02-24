@@ -139,6 +139,23 @@ pipeline {
                 }
             }
         }
+        //RUnning Performance Tests - using docker (again) instead of installing "k6" by each run
+        stage('Performance Tests') {
+            agent {
+                docker {
+                    image 'grafana/k6:latest'
+                    reuseNode true
+                    args '--network=host -u root --entrypoint=""' //overriding entrypoint into the container, otherwise it would not work 
+                }
+            }
+            steps {
+                dir('tests-perf') {
+                    sh 'k6 run script.js'
+
+                }
+            }
+
+        }
     }
     //Adding cleanUp step after all stages run
     post {
