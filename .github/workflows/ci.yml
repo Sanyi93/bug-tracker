@@ -44,7 +44,7 @@ jobs: #specifying the job
 
             - name: Publish Frontend Unit Tests Report        # step to publishing the FE Unit Test Report
               uses: dorny/test-reporter@v1                    #testReporter
-              if: always ()                              
+              if: always()                              
               with:
                 name: Frontend Unit Tests Report              #reportName
                 path: bugtracker-frontend/test-results.xml
