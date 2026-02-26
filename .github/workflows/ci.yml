@@ -33,7 +33,7 @@ jobs: #specifying the job
               with:
                 name: Backend Unit Tests Report
                 path: bugtracker-backend/test.results.xml
-                reporter: junit    
+                reporter: jest-junit    
     
     unit-tests-frontend:               #running the frontend-unit tests  
         needs: unit-tests-backend      #the backend tests needs to be finished first 
