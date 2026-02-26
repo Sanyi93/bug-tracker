@@ -42,6 +42,14 @@ jobs: #specifying the job
                 npm ci
                 npm test
 
+            - name: Publish Frontend Unit Tests Report        # step to publishing the FE Unit Test Report
+              uses: dorny/test-reporter@v1                    #testReporter
+              if: always ()                              
+              with:
+                name: Frontend Unit Tests Report              #reportName
+                path: bugtracker-frontend/test-results.xml
+                reporter: jest-junit                          #reporterType
+
 
 
 
