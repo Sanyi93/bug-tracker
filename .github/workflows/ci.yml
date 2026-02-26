@@ -1,16 +1,16 @@
 name: CI
 
 on:
-    push: #
+    push:                               #everytime a change is pushed to the main branch
         branches:
             - main
-    workflow_dispatch: #possibility to run it directly via UI
+    workflow_dispatch:                  #possibility to run it directly via UI
 
 jobs: #specifying the job
     unit-tests-backend:
         runs-on: ubuntu-latest
         steps:                               #job steps
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v4      #checking out the sourcecode
 
             #at first we need to install "go" to be able to run the BE tests
             - name: Set up Go
@@ -19,10 +19,33 @@ jobs: #specifying the job
                 go-version: "1.21"
                 cache-dependency-path: bugtracker-backend/go.sum
 
-            - name: Execute Backend unit Tests
+            - name: Execute Backend Unit Tests       #executing the BE tests
               working-directory: ./bugtracker-backend
               run: |
-                go test -v ./...
+                go test -v ./...                                                            
+    
+    unit-tests-frontend:               #running the frontend-unit tests  
+        needs: unit-tests-backend      #the backend tests needs to be finished first 
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Node.js     #setting up Nodejs & cache
+              uses: actions/setup-node@v4
+              with:
+                node-version: "20"
+                cache-dependency-path: bugtracker-frontend/package-lock.json
+
+            - name: Execute Frontend Unit Tests
+              working-directory: ./bugtracker-frontend
+              run: |
+                npm ci
+                npm test
+
+
+
+
+
 
 
             
