@@ -27,7 +27,7 @@ jobs: #specifying the job
               run: |
 
                 go test -json -coverprofile=coverage.out -covermode=atomic ./...         #generating BE test coverage report
-                go tool cover -func=coverage.out > coverage.text                         #generating coverage.txt file
+                go tool cover -func=coverage.out > coverage.txt                         #generating coverage.txt file
 
                 echo "## Go Test Coverage Report" >> $GITHUB_STEP_SUMMARY
                 echo '```' >> $GITHUB_STEP_SUMMARY                                       #entering step of the code block
