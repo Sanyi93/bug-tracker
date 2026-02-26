@@ -25,6 +25,16 @@ jobs: #specifying the job
             - name: Execute Backend Unit Tests       #executing the BE tests
               working-directory: ./bugtracker-backend
               run: |
+
+                go test -json -coverprofile=coverage.out -covermode=atomic ./...         #generating BE test coverage report
+                go tool cover -func=coverage.out > coverage.text                         #generating coverage.txt file
+
+                echo "## Go Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+                echo '```' >> $GITHUB_STEP_SUMMARY                                       #entering step of the code block
+                cat coverage.txt >> $GITHUB_STEP_SUMMARY                                 #reading & publishing the Coverage Report to the UI
+
+                echo '```' >> $GITHUB_STEP_SUMMARY                                       #closing step of the code block
+
                 go test -v ./... 2>&1 | go-junit-report > test-results.xml   
                 
             - name: Publish Backend Unit tests Report      #publishng the BE Unit Tests Report
