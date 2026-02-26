@@ -32,7 +32,7 @@ jobs: #specifying the job
               if: always()
               with:
                 name: Backend Unit Tests Report
-                path: bugtracker-backend/test.results.xml
+                path: bugtracker-backend/test-results.xml
                 reporter: jest-junit    
     
     unit-tests-frontend:               #running the frontend-unit tests  
