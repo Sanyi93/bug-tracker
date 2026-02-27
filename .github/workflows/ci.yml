@@ -1,7 +1,7 @@
 name: CI
 
 on:
-    push:                               #everytime a change is pushed to the main branch
+    push:                               #everytime a change is pushed to the main branch ----just some minor changes
         branches:
             - main
     pull_request:
