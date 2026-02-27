@@ -9,6 +9,8 @@ on:
 jobs: #specifying the job
     unit-tests-backend:
         runs-on: ubuntu-latest
+        outputs: 
+          coverage: ${{ steps.test-backend.outputs.report }}                             #from job "Execute Backend Tests"; the report must be echoed(made available). see "Execute Backend Unit Tests"
         steps:                               #job steps
             - uses: actions/checkout@v4      #checking out the sourcecode
 
@@ -23,6 +25,7 @@ jobs: #specifying the job
               run: go install github.com/jstemmer/go-junit-report/v2@latest
 
             - name: Execute Backend Unit Tests       #executing the BE tests
+              id: test-backend                       # id added in order to be able to define the output of the whole job
               working-directory: ./bugtracker-backend
               run: |
 
@@ -34,6 +37,11 @@ jobs: #specifying the job
                 cat coverage.txt >> $GITHUB_STEP_SUMMARY                                 #reading & publishing the Coverage Report to the UI
 
                 echo '```' >> $GITHUB_STEP_SUMMARY                                       #closing step of the code block
+
+                echo "report<<EOF" >> $GITHUB_OUTPUT                                     #echoing the report as an output: EOF = endOfFile
+                cat coverage.txt >> $GITHUB_OUTPUT                                       #coverage.txt is sent to GITHUB_OUTPUT
+
+                echo "EOF"  >> $GITHUB_OUTPUT
 
                 go test -v ./... 2>&1 | go-junit-report > test-results.xml   
                 
@@ -75,6 +83,25 @@ jobs: #specifying the job
                 name: Frontend Unit Tests Report              #reportName
                 path: bugtracker-frontend/test-results.xml
                 reporter: jest-junit                          #reporterType
+    
+    create-coverage-comment:                                  #adding comments on the PRs - everytime a PR is raised it has assigned certain number (see issue number)
+       if: github.event_name == 'pull_request'                
+       needs: [unit-tests-backend]
+       runs-on: ubuntu-latest
+       permissions:
+        pull-requests: write
+       steps:
+        - name: Create Backend Coverage Comment
+          uses: peter-evans/create-or-update-comment@v4            #uses existing github action
+          with:
+            issue-number: ${{ github.event.pull_request.number }}   #body to enables us to create the comment, the putputs are to be defined in the "unit-tests-backend" job
+            body: |
+              ## Backend Test Coverage Report
+              ```
+              ${{ needs.unit-tests-backend.outputs.coverage }}
+              ```
+
+              
 
 
 
