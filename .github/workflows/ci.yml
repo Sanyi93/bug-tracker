@@ -4,6 +4,9 @@ on:
     push:                               #everytime a change is pushed to the main branch
         branches:
             - main
+    pull_request:
+        branches:
+            - main
     workflow_dispatch:                  #possibility to run it directly via UI
 
 jobs: #specifying the job
