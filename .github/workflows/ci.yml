@@ -58,6 +58,8 @@ jobs: #specifying the job
     
     unit-tests-frontend:               #running the frontend-unit tests  
         needs: unit-tests-backend      #the backend tests needs to be finished first 
+        outputs: 
+          coverage: ${{ steps.test-frontend.outputs.report }}
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -69,6 +71,7 @@ jobs: #specifying the job
                 cache-dependency-path: bugtracker-frontend/package-lock.json
 
             - name: Execute Frontend Unit Tests
+              id: test-frontend
               working-directory: ./bugtracker-frontend          #in the next lines the FE Test are to be executed & Test & TestCOverage Reports are to be generated
               run: |
                 npm ci
@@ -77,7 +80,12 @@ jobs: #specifying the job
                 echo "## Frontend Test Coverage Report" >> $GITHUB_STEP_SUMMARY    
                 echo '```' >> $GITHUB_STEP_SUMMARY
                 cat full_output.txt >> $GITHUB_STEP_SUMMARY
-                echo '```' >> $GITHUB_STEP_SUMMARY          
+                echo '```' >> $GITHUB_STEP_SUMMARY 
+                
+                echo "report<<EOF" >> $GITHUB_OUTPUT
+                cat full_output.txt >> $GITHUB_OUTPUT
+
+                echo "EOF"  >> $GITHUB_OUTPUT
 
             - name: Publish Frontend Unit Tests Report        # step to publishing the FE Unit Test Report
               uses: dorny/test-reporter@v1                    #testReporter
@@ -89,7 +97,7 @@ jobs: #specifying the job
     
     create-coverage-comment:                                  #adding comments on the PRs - everytime a PR is raised it has assigned certain number (see issue number)
        if: github.event_name == 'pull_request'                
-       needs: [unit-tests-backend]
+       needs: [unit-tests-backend, unit-tests-frontend]
        runs-on: ubuntu-latest
        permissions:
         pull-requests: write
@@ -102,6 +110,16 @@ jobs: #specifying the job
               ## Backend Test Coverage Report
               ```
               ${{ needs.unit-tests-backend.outputs.coverage }}
+              ```
+
+        - name: Create Frontend Coverage Comment
+          uses: peter-evans/create-or-update-comment@v4
+          with:
+            issue-number: ${{ github.event.pull_request.number }}
+            body: |
+              ## Frontend Test Coverage Report
+              ```
+              ${{ needs.unit-tests-frontend.outputs.coverage }}
               ```
 
               
