@@ -148,7 +148,7 @@ jobs: #specifying the job
           uses: actions/upload-artifact@v4
           with:
             name: api-test-results
-            path: ./tests-api/rest-results/
+            path: ./tests-api/test-results/
             retention-days: 30                                 #No of days the report shall be saved
 
         - name: Upload API Test Playwright Report              #uploading the PW Test Report
