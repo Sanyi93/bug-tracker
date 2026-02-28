@@ -121,7 +121,7 @@ jobs: #specifying the job
               ```
               ${{ needs.unit-tests-frontend.outputs.coverage }}
               ```
-    api-tests:
+    api-e2e-tests:
       needs: [unit-tests-backend, unit-tests-frontend]                  #needs to be finished first
       runs-on: ubuntu-latest
 
@@ -138,6 +138,15 @@ jobs: #specifying the job
           working-directory: ./tests-api
           run: |
             npm ci
+            npx playwright test
+        
+        - name: Executing E2E Tests
+          working-directory: ./tests-e2e
+          env:
+            CI: "1"                                            #not really need to specify (shall be specified in the config file)
+          run: |
+            npm ci
+            npx playwright install
             npx playwright test
 
         - name: Shut the App down                               #shutting down the app
@@ -166,6 +175,8 @@ jobs: #specifying the job
             name: API Test Report
             path: ./tests-api/test-results/*.xml
             reporter: jest-junit                                #Need to specify the reporter name/type
+
+
 
 
 
