@@ -198,7 +198,7 @@ jobs: #specifying the job
           uses: actions/upload-artifact@v4
           with:
             name: performance-test-raw-results
-            path: ./tests-perf/summary.json
+            path: summary.json
             retention-days: 30
 
         - name: Upload Performance Test HTML Report          #Performance uploading html report
@@ -206,7 +206,7 @@ jobs: #specifying the job
           uses: actions/upload-artifact@v4
           with:
             name: performance-test-html-report
-            path: ./tests-perf/perf-results.html
+            path: perf-results.html
             retention-days: 30
 
         - name: Publishing API Test Results                   #Publishing API Test Results/Test Report
