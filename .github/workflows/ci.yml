@@ -193,6 +193,22 @@ jobs: #specifying the job
             path: ./tests-e2e/playwright-report
             retention-days: 30
 
+        - name: Upload Performance Test Raw Results           #Performance uploading raw results
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: performance-test-raw-results
+            path: ./tests-perf/summary.json
+            retention-days: 30
+
+        - name: Upload Performance Test HTML Report          #Performance uploading html report
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: performance-test-html-report
+            path: ./tests-perf/perf-results.html
+            retention-days: 30
+
         - name: Publishing API Test Results                   #Publishing API Test Results/Test Report
           if: always()
           uses: dorny/test-reporter@v1
@@ -201,7 +217,7 @@ jobs: #specifying the job
             path: ./tests-api/test-results/*.xml
             reporter: jest-junit                                #Need to specify the reporter name/type
 
-        - name: Publishing E2E Test Results                    #Publishin E2E Test Results/Test Report
+        - name: Publishing E2E Test Results                    #Publishing E2E Test Results/Test Report
           if: always()
           uses: dorny/test-reporter@v1
           with:
