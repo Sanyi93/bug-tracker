@@ -1,0 +1,243 @@
+name: CI
+
+on:
+    push:                               #everytime a change is pushed to the main branch  cmnt
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+    workflow_dispatch:                  #possibility to run it directly via UI
+
+jobs: #specifying the job
+    unit-tests-backend:
+        runs-on: ubuntu-latest
+        outputs: 
+          coverage: ${{ steps.test-backend.outputs.report }}                             #from job "Execute Backend Tests"; the report must be echoed(made available). see "Execute Backend Unit Tests"
+        steps:                               #job steps
+            - uses: actions/checkout@v4      #checking out the sourcecode
+
+            #at first we need to install "go" to be able to run the BE tests
+            - name: Set up Go
+              uses: actions/setup-go@v4
+              with:
+                go-version: "1.21"
+                cache-dependency-path: bugtracker-backend/go.sum
+
+            - name: Install go-junit-report    #installin ght go-junit-report in order to create & publish the report
+              run: go install github.com/jstemmer/go-junit-report/v2@latest
+
+            - name: Execute Backend Unit Tests       #executing the BE tests
+              id: test-backend                       # id added in order to be able to define the output of the whole job
+              working-directory: ./bugtracker-backend
+              run: |
+
+                go test -json -coverprofile=coverage.out -covermode=atomic ./...        #generating BE test coverage report
+                go tool cover -func=coverage.out > coverage.txt                         #generating coverage.txt file
+
+                echo "## Go Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+                echo '```' >> $GITHUB_STEP_SUMMARY                                       #entering step of the code block
+                cat coverage.txt >> $GITHUB_STEP_SUMMARY                                 #reading & publishing the Coverage Report to the UI
+
+                echo '```' >> $GITHUB_STEP_SUMMARY                                       #closing step of the code block
+
+                echo "report<<EOF" >> $GITHUB_OUTPUT                                     #echoing the report as an output: EOF = endOfFile
+                cat coverage.txt >> $GITHUB_OUTPUT                                       #coverage.txt is sent to GITHUB_OUTPUT
+
+                echo "EOF"  >> $GITHUB_OUTPUT
+
+                go test -v ./... 2>&1 | go-junit-report > test-results.xml   
+                
+            - name: Publish Backend Unit tests Report      #publishng the BE Unit Tests Report
+              uses: dorny/test-reporter@v1
+              if: always()
+              with:
+                name: Backend Unit Tests Report
+                path: bugtracker-backend/test-results.xml
+                reporter: jest-junit    
+    
+    unit-tests-frontend:               #running the frontend-unit tests  
+        needs: unit-tests-backend      #the backend tests needs to be finished first 
+        outputs: 
+          coverage: ${{ steps.test-frontend.outputs.report }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Node.js     #setting up Nodejs & cache
+              uses: actions/setup-node@v4
+              with:
+                node-version: "20"
+                cache-dependency-path: bugtracker-frontend/package-lock.json
+
+            - name: Execute Frontend Unit Tests
+              id: test-frontend
+              working-directory: ./bugtracker-frontend          #in the next lines the FE Test are to be executed & Test & TestCOverage Reports are to be generated
+              run: |
+                npm ci
+                npm test | tee full_output.txt                                      
+
+                echo "## Frontend Test Coverage Report" >> $GITHUB_STEP_SUMMARY    
+                echo '```' >> $GITHUB_STEP_SUMMARY
+                cat full_output.txt >> $GITHUB_STEP_SUMMARY
+                echo '```' >> $GITHUB_STEP_SUMMARY 
+                
+                echo "report<<EOF" >> $GITHUB_OUTPUT
+                cat full_output.txt >> $GITHUB_OUTPUT
+
+                echo "EOF"  >> $GITHUB_OUTPUT
+
+            - name: Publish Frontend Unit Tests Report        # step to publishing the FE Unit Test Report
+              uses: dorny/test-reporter@v1                    #testReporter
+              if: always()                              
+              with:
+                name: Frontend Unit Tests Report              #reportName
+                path: bugtracker-frontend/test-results.xml
+                reporter: jest-junit                          #reporterType
+    
+    create-coverage-comment:                                  #adding comments on the PRs - everytime a PR is raised it has assigned certain number (see issue number)
+       if: github.event_name == 'pull_request'                
+       needs: [unit-tests-backend, unit-tests-frontend]
+       runs-on: ubuntu-latest
+       permissions:
+        pull-requests: write
+       steps:
+        - name: Create Backend Coverage Comment
+          uses: peter-evans/create-or-update-comment@v4            #uses existing github action
+          with:
+            issue-number: ${{ github.event.pull_request.number }}   #body to enables us to create the comment, the putputs are to be defined in the "unit-tests-backend" job
+            body: |
+              ## Backend Test Coverage Report
+              ```
+              ${{ needs.unit-tests-backend.outputs.coverage }}
+              ```
+
+        - name: Create Frontend Coverage Comment
+          uses: peter-evans/create-or-update-comment@v4
+          with:
+            issue-number: ${{ github.event.pull_request.number }}
+            body: |
+              ## Frontend Test Coverage Report
+              ```
+              ${{ needs.unit-tests-frontend.outputs.coverage }}
+              ```
+    api-e2e-perf-tests:
+      needs: [unit-tests-backend, unit-tests-frontend]                  #needs to be finished first
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Checkout Repository                                    
+          uses: actions/checkout@v4
+
+        - name: Launch the App                                        #the App has to be launched first + checking the port really runs
+          run: |
+            docker compose up --build -d
+            npx wait-port http://localhost:8080/api/health -t 30000     
+            
+        - name: Executing API Tests
+          working-directory: ./tests-api
+          run: |
+            npm ci
+            npx playwright test
+        
+        - name: Executing E2E Tests
+          working-directory: ./tests-e2e
+          env:
+            CI: "1"                                            #not really need to specify (shall be specified in the config file)
+          run: |
+            npm ci
+            npx playwright install
+            npx playwright test
+
+        - name: Setup K6                                         #setting up k6 tool
+          uses: grafana/setup-k6-action@v1
+
+        - name: Executing Performance Tests                      #executing Performance tests using k6
+          uses: grafana/run-k6-action@v1
+          with:
+            path: ./tests-perf/script.js
+            flags: --out json=summary.json                       #output file summary.json
+
+        - name: Shut the App down                               #shutting down the app
+          run: docker compose down
+
+        - name: Upload API Tests Results                        #uploading API test results
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: api-test-results
+            path: ./tests-api/test-results/
+            retention-days: 30                                 #No of days the report shall be saved
+
+        - name: Upload E2E Test Results                        #uploading E2E Test Results
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: e2e-test-results
+            path: ./tests-e2e/test-results/
+            retention-days: 30
+
+        - name: Upload API Test Playwright Report              #API uploading the PW Test Report
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: api-test-playwright-report
+            path: ./tests-api/playwright-report
+            retention-days: 30
+
+        - name: E2E Test Playwright Report                     # E2E uploading the PW Test Report
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: e2e-test-playwright-report
+            path: ./tests-e2e/playwright-report
+            retention-days: 30
+
+        - name: Upload Performance Test Raw Results           #Performance uploading raw results
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: performance-test-raw-results
+            path: summary.json
+            retention-days: 30
+
+        - name: Upload Performance Test HTML Report          #Performance uploading html report
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: performance-test-html-report
+            path: perf-results.html
+            retention-days: 30
+
+        - name: Publishing API Test Results                   #Publishing API Test Results/Test Report
+          if: always()
+          uses: dorny/test-reporter@v1
+          with:
+            name: API Test Report
+            path: ./tests-api/test-results/*.xml
+            reporter: jest-junit                                #Need to specify the reporter name/type
+
+        - name: Publishing E2E Test Results                    #Publishing E2E Test Results/Test Report
+          if: always()
+          uses: dorny/test-reporter@v1
+          with:
+            name: E2E Test Report
+            path: ./tests-e2e/test-results/*.xml
+            reporter: jest-junit
+
+
+
+
+
+
+
+
+              
+
+
+
+
+
+
+
+            

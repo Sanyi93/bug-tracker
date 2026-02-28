@@ -3,6 +3,8 @@ import { sleep, check } from "k6";
 import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js";
 import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 
+//need to install the k6 tool -> via pwsh as Admin 'choco install k6'
+//running the k6 performance tests locally  -> 'k6 run script.js'
 export const options = {
   duration: "30s",
   vus: 1,
