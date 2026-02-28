@@ -160,7 +160,15 @@ jobs: #specifying the job
             path: ./tests-api/test-results/
             retention-days: 30                                 #No of days the report shall be saved
 
-        - name: Upload API Test Playwright Report              #uploading the PW Test Report
+        - name: Upload E2E Test Results                        #uploading E2E Test Results
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: e2e-test-results
+            path: ./tests-e2e/test-results/
+            retention-days: 30
+
+        - name: Upload API Test Playwright Report              #API uploading the PW Test Report
           if: always()
           uses: actions/upload-artifact@v4
           with:
@@ -168,13 +176,29 @@ jobs: #specifying the job
             path: ./tests-api/playwright-report
             retention-days: 30
 
-        - name: Publishing API Test Results                   #Publishin API Test Results/Test Report
+        - name: E2E Test Playwright Report                     # E2E uploading the PW Test Report
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: e2e-test-playwright-report
+            path: ./tests-e2e/playwright-report
+            retention-days: 30
+
+        - name: Publishing API Test Results                   #Publishing API Test Results/Test Report
           if: always()
           uses: dorny/test-reporter@v1
           with:
             name: API Test Report
             path: ./tests-api/test-results/*.xml
             reporter: jest-junit                                #Need to specify the reporter name/type
+
+        - name: Publishing E2E Test Results                    #Publishin E2E Test Results/Test Report
+          if: always()
+          uses: dorny/test-reporter@v1
+          with:
+            name: E2E Test Report
+            path: ./tests-e2e/test-results/*.xml
+            reporter: jest-junit
 
 
 
